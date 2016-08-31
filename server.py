@@ -3,34 +3,58 @@ import requests
 import random
 from flask import Flask, jsonify, request
 
-from pprint import pprint
+import quotes
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY')
 
 @app.route('/', methods=["GET"])
 def index():
+    command_text = request.args.get('text', '').strip()
+
+    if command_text == 'gif':
+        return get_spock_gif()
+    elif command_text == 'quote':
+        return get_spock_quote()
+
+    else:
+        return get_spock_gif()
+
+
+@app.route('/gif', methods=["GET"])
+def get_spock_gif():
     image_url = get_gif('Spock')
-    text = 'Live long and prosper.'
-    episode_credit = 'Start Trek, season 2, episode 1 ("Amok Time," 1968)'
 
     response = {
         "response_type": "in_channel",
         "text": ":spock-hand: Spock-check yourself!\n{}".format(image_url),
-        "attachments": [{
-            "text": '"{}"'.format(text),
-            "color": "3B8FCB",
-            "fields": [{
-                "title": "Episode Credit: ",
-                "value": episode_credit,
-                "short": True
-            }]
-        }]
     }
 
     return jsonify(response)
 
-def get_gif(search_term='Spock'):
+
+@app.route('/quote', methods=["GET"])
+def get_spock_quote():
+    quote = quotes.get_random_quote(quotes.SPOCK_QUOTES)
+    # episode_credit = 'Start Trek, season 2, episode 1 ("Amok Time," 1968)'
+
+    response = {
+        "response_type": "in_channel",
+        "text": ':spock-hand: Spock-check yourself!\n_"{}"_'.format(quote),
+        # "attachments": [{
+        #     "color": "3B8FCB",
+        #     "fields": [{
+        #         "title": "Episode Credit: ",
+        #         "value": episode_credit,
+        #         "short": True
+        #     }]
+        # }]
+    }
+
+    return jsonify(response)
+
+
+def get_gif(search_term):
     """Hit up the Giphy Search API to get a random gif."""
 
     # FIXME: currently hardcoded and not doing any parsing, substitution
