@@ -12,9 +12,10 @@ def index():
 
     response = {
         "response_type": "in_channel",
-        "text": ":spock-hand: Spock-check yourself!",
+        "text": ":spock-hand: Spock-check yourself!\n{}".format(image_url),
         "attachments": [{
-            "text": "{0}\n{1}".format(text, image_url),
+            "text": '"{}"'.format(text),
+            "color": "3B8FCB",
             "fields": [{
                 "title": "Episode Credit: ",
                 "value": episode_credit,
