@@ -6,17 +6,15 @@ app.secret_key = os.environ.get('FLASK_SECRET_KEY')
 
 @app.route('/', methods=["GET"])
 def index():
-    image_url = 'http://imgur.com/gallery/zWxWcV4'
-    text = 'Live long and prosper'
+    image_url = 'http://giphy.com/gifs/NpEE2cRs2Amkg'
+    text = 'Live long and prosper.'
     episode_credit = 'Start Trek, season 2, episode 1 ("Amok Time," 1968)'
 
     response = {
         "response_type": "in_channel",
         "text": ":spock-hand: Spock-check yourself!",
         "attachments": [{
-            "image_url": image_url,
-            "text": text,
-            "color": "#4E90A4",
+            "text": "{0}\n{1}".format(text, image_url),
             "fields": [{
                 "title": "Episode Credit: ",
                 "value": episode_credit,

@@ -1,4 +1,4 @@
-# Spock check of yourself!
+# Spock-check yourself!
 
 #### `/spock`
 
