@@ -1,7 +1,7 @@
 import os
 import requests
 import random
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 
 import quotes
 
@@ -10,27 +10,40 @@ app.secret_key = os.environ.get('FLASK_SECRET_KEY')
 
 @app.route('/', methods=["GET"])
 def index():
-    command_text = request.args.get('text', '').strip()
+    """Return the main page."""
+
+    scope = "commands"
+    client_id = os.environ.get('SLACK_CLIENT_ID')
+    redirect_uri = "https://spock-check.herokuapp.com/auth"
+    state = "RANDOMSTATE"
+
+    auth_url = ("https://slack.com/oauth/authorize?" +
+                "&scope=" + scope +
+                "&client_id=" + client_id +
+                "&redirect_uri=" + redirect_uri +
+                "&state=" + state)
+
+    return render_template('addbutton.html', auth_url=auth_url)
+
+
+@app.route('/command', methods=["GET"])
+def command():
+    """Decide how to route the incoming request."""
+    payload = request.args
+    command_text = payload.get('text', '').strip()
+    command_token = payload.get('token', '').strip()
+
+    # FIXME: once this works, update existing slash-command custom integrations
+    verification_token = os.environ.get('SLACK_VERIFICATION_TOKEN')
+    if command_token != verification_token:
+        return invalid_slack_token()
 
     if command_text == 'gif':
         return get_spock_gif()
     elif command_text == 'quote':
         return get_spock_quote()
-
     else:
         return get_spock_gif()
-
-
-@app.route('/gif', methods=["GET"])
-def get_spock_gif():
-    image_url = get_gif('Spock')
-
-    response = {
-        "response_type": "in_channel",
-        "text": ":spock-hand: Spock-check yourself!\n{}".format(image_url),
-    }
-
-    return jsonify(response)
 
 
 @app.route('/quote', methods=["GET"])
@@ -49,6 +62,18 @@ def get_spock_quote():
         #         "short": True
         #     }]
         # }]
+    }
+
+    return jsonify(response)
+
+
+@app.route('/gif', methods=["GET"])
+def get_spock_gif():
+    image_url = get_gif('Spock')
+
+    response = {
+        "response_type": "in_channel",
+        "text": ":spock-hand: Spock-check yourself!\n{}".format(image_url),
     }
 
     return jsonify(response)
@@ -81,6 +106,51 @@ def get_gif(search_term):
 
     return gif_url
 
+
+@app.route('/auth', methods=["GET"])
+def confirm_auth():
+    """Provide feedback to user about whether or not auth has been successful."""
+
+    error = request.args.get('error')
+    auth_code = request.args.get('code')
+
+    # case where user has auth'd
+    if not error:
+        access_token = get_slack_access_token(auth_code)
+        message = "Wahoo! You've authorized Spock-Check!"
+
+    # case wher user has denied auth
+    else:
+        message = "Spock-Check has NOT been authorized."
+
+    return render_template('auth.html', message=message)
+
+
+def invalid_slack_token():
+    """Return a response if the request token provided is invalid."""
+
+    response = {
+        "response_type": "in_channel",
+        "text": "Sorry, I don't recognize your team!",
+    }
+
+    return jsonify(response)
+
+
+def get_slack_access_token(auth_code):
+    """Makes a request to Slack, using the oauth.access API,
+    to get an access token."""
+
+    params = {
+        'client_id': os.environ.get('SLACK_CLIENT_ID'),
+        'client_secret': os.environ.get('SLACK_CLIENT_SECRET'),
+        'code': auth_code,
+        'redirect_uri': 'https://spock-check.herokuapp.com/auth'
+    }
+
+    response = requests.get('https://slack.com/api/oauth.access', params=params).json()
+
+    return response.get('access_token')
 
 if __name__ == "__main__":
     PORT = int(os.environ.get("PORT", 5000))
