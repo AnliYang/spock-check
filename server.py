@@ -26,10 +26,10 @@ def index():
     return render_template('addbutton.html', auth_url=auth_url)
 
 
-@app.route('/command', methods=["GET"])
+@app.route('/command', methods=["POST"])
 def command():
     """Decide how to route the incoming request."""
-    payload = request.args
+    payload = request.form
     command_text = payload.get('text', '').strip()
     command_token = payload.get('token', '').strip()
 
